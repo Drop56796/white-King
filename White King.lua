@@ -676,7 +676,7 @@ section1:toggle({
                 A120 = Color3.new(1, 1, 1),
                 A60 = Color3.new(1, 1, 1),
                 Eyes = Color3.new(1, 1, 1),
-                JeffTheKiller = Color3.new(1, 1, 1),
+                JeffTheKiller = Color3.new(1, 1, 1)
             }
 
             local function createBillboard(instance, name, color)
@@ -830,151 +830,144 @@ section1:toggle({
     end
 })
 
-
-
 section2:toggle({
     name = "Item ESP",
     def = false,
-    callback = function(val)
-        local esptable = {items = {}}
-        local flags = {espitems = val}
+    callback = function(isEnabled)
+        local espItems = {}
+        local isEspEnabled = isEnabled
+        
+        -- Function to create ESP effects
+        local function createESP(part, color, name)
+            local boxAdornment
+            local billboardGui
 
-        local function esp(part, color, core, name)
-    -- Function definition for esp
-    local boxes = {}
-    if part and part:IsA("BasePart") then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Size = part.Size
-        box.AlwaysOnTop = true
-        box.ZIndex = 1
-        box.AdornCullingMode = Enum.AdornCullingMode.Never
-        box.Color3 = color
-        box.Transparency = 1
-        box.Adornee = part
-        box.Parent = game.CoreGui
+            -- Create a BoxHandleAdornment if part is a BasePart
+            if part and part:IsA("BasePart") then
+                boxAdornment = Instance.new("BoxHandleAdornment")
+                boxAdornment.Size = part.Size
+                boxAdornment.AlwaysOnTop = true
+                boxAdornment.ZIndex = 1
+                boxAdornment.AdornCullingMode = Enum.AdornCullingMode.Never
+                boxAdornment.Color3 = color
+                boxAdornment.Transparency = 1
+                boxAdornment.Adornee = part
+                boxAdornment.Parent = game.CoreGui
 
-        table.insert(boxes, box)
-
-        task.spawn(function()
-            while box do
-                if not box.Adornee or not box.Adornee:IsDescendantOf(workspace) then
-                    box.Adornee = nil
-                    box.Visible = false
-                    box:Destroy()
-                end
-                task.wait()
-            end
-        end)
-    end
-
-    local bill
-    if core and name then
-        bill = Instance.new("BillboardGui", game.CoreGui)
-        bill.AlwaysOnTop = true
-        bill.Size = UDim2.new(0, 400, 0, 100)
-        bill.Adornee = core
-        bill.MaxDistance = 2000
-
-        local mid = Instance.new("Frame", bill)
-        mid.AnchorPoint = Vector2.new(0.5, 0.5)
-        mid.BackgroundColor3 = color
-        mid.Size = UDim2.new(0, 8, 0, 8)
-        mid.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
-        Instance.new("UIStroke", mid)
-
-        local txt = Instance.new("TextLabel", bill)
-        txt.AnchorPoint = Vector2.new(0.5, 0.5)
-        txt.BackgroundTransparency = 1
-        txt.TextColor3 = color
-        txt.Size = UDim2.new(1, 0, 0, 20)
-        txt.Position = UDim2.new(0.5, 0, 0.7, 0)
-        txt.Text = name
-        Instance.new("UIStroke", txt)
-
-        task.spawn(function()
-            while bill do
-                if not bill.Adornee or not bill.Adornee:IsDescendantOf(workspace) then
-                    bill.Enabled = false
-                    bill.Adornee = nil
-                    bill:Destroy()
-                end
-                task.wait()
-            end
-        end)
-    end
-
-    local ret = {}
-    ret.delete = function()
-        for _, v in pairs(boxes) do
-            v.Adornee = nil
-            v.Visible = false
-            v:Destroy()
-        end
-
-        if bill then
-            bill.Enabled = false
-            bill.Adornee = nil
-            bill:Destroy()
-        end
-    end
-
-    return ret
- end
-
-        if val then
-            local function check(v)
-                if v:IsA("Model") and (v:GetAttribute("Pickup") or v:GetAttribute("PropType")) then
-                    task.wait(0.1)
-                    
-                    local part = (v:FindFirstChild("Handle") or v:FindFirstChild("Prop"))
-                    local h = esp(part, Color3.fromRGB(255, 255, 255), part, v.Name)
-                    table.insert(esptable.items, h)
-                end
-            end
-
-            local function setup(room)
-                local assets = room:WaitForChild("Assets")
-
-                if assets then  
-                    local subaddcon
-                    subaddcon = assets.DescendantAdded:Connect(function(v)
-                        check(v) 
-                    end)
-                    
-                    for _, v in pairs(assets:GetDescendants()) do
-                        check(v)
+                task.spawn(function()
+                    while boxAdornment do
+                        if not boxAdornment.Adornee or not boxAdornment.Adornee:IsDescendantOf(workspace) then
+                            boxAdornment:Destroy()
+                            break
+                        end
+                        task.wait()
                     end
-                    
-                    task.spawn(function()
-                        repeat task.wait() until not flags.espitems
-                        subaddcon:Disconnect()  
-                    end)
-                end 
+                end)
             end
 
-            local addconnect
-            addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
-                setup(room)
+            -- Create a BillboardGui for labels
+            if part and name then
+                billboardGui = Instance.new("BillboardGui")
+                billboardGui.AlwaysOnTop = true
+                billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                billboardGui.Adornee = part
+                billboardGui.MaxDistance = 2000
+                billboardGui.Parent = game.CoreGui
+
+                local label = Instance.new("TextLabel")
+                label.AnchorPoint = Vector2.new(0.5, 0.5)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = color
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.Position = UDim2.new(0.5, 0, 0.5, 0)
+                label.Text = name
+                label.Parent = billboardGui
+
+                task.spawn(function()
+                    while billboardGui do
+                        if not billboardGui.Adornee or not billboardGui.Adornee:IsDescendantOf(workspace) then
+                            billboardGui:Destroy()
+                            break
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            return {
+                delete = function()
+                    if boxAdornment then
+                        boxAdornment:Destroy()
+                    end
+                    if billboardGui then
+                        billboardGui:Destroy()
+                    end
+                end
+            }
+        end
+
+        -- Function to check if an item should be added to ESP
+        local function checkItem(item)
+            if item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) then
+                task.wait(0.1)
+                local part = item:FindFirstChild("Handle") or item:FindFirstChild("Prop")
+                if part then
+                    local espInstance = createESP(part, Color3.fromRGB(255, 255, 255), item.Name)
+                    table.insert(espItems, espInstance)
+                end
+            end
+        end
+
+        -- Function to handle room setup
+        local function setupRoom(room)
+            local assets = room:FindFirstChild("Assets")
+            if assets then
+                local connection
+                connection = assets.DescendantAdded:Connect(function(descendant)
+                    checkItem(descendant)
+                end)
+
+                for _, descendant in ipairs(assets:GetDescendants()) do
+                    checkItem(descendant)
+                end
+
+                task.spawn(function()
+                    while isEspEnabled do
+                        task.wait(1)
+                    end
+                    connection:Disconnect()
+                end)
+            end
+        end
+
+        if isEspEnabled then
+            -- Set up ESP for existing and new rooms
+            local roomAddedConnection
+            roomAddedConnection = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+                setupRoom(room)
             end)
 
-            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
-                if room:FindFirstChild("Assets") then
-                    setup(room) 
-                end
+            for _, room in ipairs(workspace.CurrentRooms:GetChildren()) do
+                setupRoom(room)
             end
 
-            repeat task.wait() until not flags.espitems
-            addconnect:Disconnect()
-
-            for _, v in pairs(esptable.items) do
-                v.delete()
-            end 
+            -- Monitor the toggle state
+            task.spawn(function()
+                while isEspEnabled do
+                    task.wait(1)
+                end
+                roomAddedConnection:Disconnect()
+                
+                -- Clean up all ESP items
+                for _, espInstance in ipairs(espItems) do
+                    espInstance.delete()
+                end
+            end)
         else
-            -- Handle disabling the feature
-            for _, v in pairs(esptable.items) do
-                v.delete()
-            end 
+            -- Clean up all ESP items if disabled
+            for _, espInstance in ipairs(s) do
+                espInstance.delete()
+            end
         end
     end
 })
