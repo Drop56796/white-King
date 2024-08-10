@@ -482,11 +482,11 @@ local function tpWalk(speed)
         end
     end
 end
-3
+
 section2:slider({
     name = "Speed",
     def = 0,
-    max = ,
+    max = 3,
     min = 0,
     rounding = true,
     callback = function(value)
