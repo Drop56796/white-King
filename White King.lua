@@ -976,3 +976,142 @@ section2:toggle({
         end
     end
 })
+
+section2:toggle({
+    name = "Entity Message (Information)",
+    def = false,
+    callback = function(state)
+        if state then
+            -- Define variables
+            local entityNames = {"RushMoving", "AmbushMoving", "Snare", "A60", "A120", "A90", "Eyes", "JeffTheKiller"}
+            local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+            local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+            local plr = game.Players.LocalPlayer
+            local running = true
+
+            -- Function to notify entity spawn
+            local function notifyEntitySpawn(entity)
+                Notification:Notify(
+                    {Title = "Entity Notification(White King)", Description = entity.Name:gsub("Moving", ""):lower() .. " Spawned!"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=13327193518", ImageColor = Color3.fromRGB(1, 1, 1)}
+                )
+            end
+
+            -- Function to handle new child entities
+            local function onChildAdded(child)
+                if table.find(entityNames, child.Name) then
+                    -- Wait until the player is within 1000 studs or the entity is removed
+                    repeat
+                        task.wait()
+                    until plr:DistanceFromCharacter(child:GetPivot().Position) < 1000 or not child:IsDescendantOf(workspace)
+
+                    -- Notify if entity is still in workspace
+                    if child:IsDescendantOf(workspace) then
+                        notifyEntitySpawn(child)
+                    end
+                end
+            end
+
+            -- Start monitoring for new entities
+            local connection = workspace.ChildAdded:Connect(onChildAdded)
+
+            -- Monitor flag and stop the process if the flag is false
+            task.spawn(function()
+                while running do
+                    task.wait(1) -- Adjust the wait time as needed
+                    if not state then
+                        running = false
+                    end
+                end
+                connection:Disconnect()
+            end)
+        else
+            -- Stop monitoring and cleanup if needed
+            running = false
+            -- Add any additional cleanup code here if necessary
+        end
+    end
+})
+
+section1:toggle({
+    name = "book/paper ESP",
+    def = false,
+    callback = function(book)
+        if book then
+            book = {}
+            local itemTypes = {
+                LiveBreakerPolePickup = Color3.new(1, 0, 0),
+                LiveHintBook = Color3.new(0, 1, 1)
+            }
+
+            local function createBillboard(instance, name, color)
+                if not instance or not instance:IsDescendantOf(workspace) then return end
+
+                local bill = Instance.new("BillboardGui", game.CoreGui)
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = instance
+                bill.MaxDistance = 2000
+
+                local mid = Instance.new("Frame", bill)
+                mid.AnchorPoint = Vector2.new(0.5, 0.5)
+                mid.BackgroundColor3 = color
+                mid.Size = UDim2.new(0, 8, 0, 8)
+                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+                Instance.new("UIStroke", mid)
+
+                local txt = Instance.new("TextLabel", bill)
+                txt.AnchorPoint = Vector2.new(0.5, 0.5)
+                txt.BackgroundTransparency = 1
+                txt.TextColor3 = color
+                txt.Size = UDim2.new(1, 0, 0, 20)
+                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+                txt.Text = name
+                Instance.new("UIStroke", txt)
+
+                task.spawn(function()
+                    while bill and bill.Adornee do
+                        if not bill.Adornee:IsDescendantOf(workspace) then
+                            bill:Destroy()
+                            return
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            local function book()
+                for name, color in pairs(book) do
+                    -- Check existing instances
+                    for _, instance in pairs(workspace:GetDescendants()) do
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end
+
+                    -- Monitor for new instances
+                    workspace.DescendantAdded:Connect(function(instance)
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end)
+                end
+            end
+
+            book()
+
+            table.insert(book, esptable)
+        else
+            if book then
+                for _, instance in pairs(book) do
+                    for _, v in pairs(instance.book) do
+                        v.delete()
+                    end
+                end
+                book = nil
+            end
+        end
+    end
+})
