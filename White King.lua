@@ -830,7 +830,16 @@ section1:toggle({
     end
 })
 
-local function esp(part, color, core, name)
+
+
+section2:toggle({
+    name = "Item ESP",
+    def = false,
+    callback = function(val)
+        local esptable = {items = {}}
+        local flags = {espitems = val}
+
+        local function esp(part, color, core, name)
     -- Function definition for esp
     local boxes = {}
     if part and part:IsA("BasePart") then
@@ -911,14 +920,7 @@ local function esp(part, color, core, name)
     end
 
     return ret
-end
-
-section2:toggle({
-    name = "Item ESP",
-    def = false,
-    callback = function(val)
-        local esptable = {items = {}}
-        local flags = {espitems = val}
+ end
 
         if val then
             local function check(v)
