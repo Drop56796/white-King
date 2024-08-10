@@ -828,3 +828,42 @@ section2:toggle({
         toggleBypass(state)
     end
 })
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Variables to manage third-person view state
+local thirdPersonEnabled = false
+
+-- Function to toggle third-person view
+local function toggleThirdPerson(state)
+    thirdPersonEnabled = state
+    
+    if state then
+        -- Enable third-person view
+        RunService:BindToRenderStep('ThirdPersonView', Enum.RenderPriority.Camera.Value, function()
+            if character and humanoidRootPart then
+                Camera.CameraType = Enum.CameraType.Scriptable
+                Camera.CFrame = CFrame.new(humanoidRootPart.Position - humanoidRootPart.CFrame.LookVector * 10, humanoidRootPart.Position)
+            end
+        end)
+    else
+        -- Disable third-person view
+        RunService:UnbindFromRenderStep('ThirdPersonView')
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+end
+
+-- Toggle control
+section1:toggle({
+    name = "Enable Third View",
+    def = false,
+    callback = function(state)
+        toggleThirdPerson(state)
+    end
+})
