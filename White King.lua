@@ -772,12 +772,13 @@ local function tpWalk(speed)
     end
 end
 
-local PlayerTPWalkSpeedSlider = a:AddSlider({
-    Name = "TP Walk",
-    Value = 0,
-    Min = 0,
-    Max = 1,
-    Callback = function(Value)
+section2:slider({
+    name = "Speed",
+    def = 0,
+    max = 1,
+    min = 0,
+    rounding = true,
+    callback = function(value)
         if tpWalkThread then
             tpWalkThread:Disconnect()
         end
@@ -865,5 +866,233 @@ section1:toggle({
     def = false,
     callback = function(state)
         toggleThirdPerson(state)
+    end
+})
+
+local function esp(part, color, core, name)
+    -- Function definition for esp
+    local boxes = {}
+    if part and part:IsA("BasePart") then
+        local box = Instance.new("BoxHandleAdornment")
+        box.Size = part.Size
+        box.AlwaysOnTop = true
+        box.ZIndex = 1
+        box.AdornCullingMode = Enum.AdornCullingMode.Never
+        box.Color3 = color
+        box.Transparency = 1
+        box.Adornee = part
+        box.Parent = game.CoreGui
+
+        table.insert(boxes, box)
+
+        task.spawn(function()
+            while box do
+                if not box.Adornee or not box.Adornee:IsDescendantOf(workspace) then
+                    box.Adornee = nil
+                    box.Visible = false
+                    box:Destroy()
+                end
+                task.wait()
+            end
+        end)
+    end
+
+    local bill
+    if core and name then
+        bill = Instance.new("BillboardGui", game.CoreGui)
+        bill.AlwaysOnTop = true
+        bill.Size = UDim2.new(0, 400, 0, 100)
+        bill.Adornee = core
+        bill.MaxDistance = 2000
+
+        local mid = Instance.new("Frame", bill)
+        mid.AnchorPoint = Vector2.new(0.5, 0.5)
+        mid.BackgroundColor3 = color
+        mid.Size = UDim2.new(0, 8, 0, 8)
+        mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+        Instance.new("UIStroke", mid)
+
+        local txt = Instance.new("TextLabel", bill)
+        txt.AnchorPoint = Vector2.new(0.5, 0.5)
+        txt.BackgroundTransparency = 1
+        txt.TextColor3 = color
+        txt.Size = UDim2.new(1, 0, 0, 20)
+        txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+        txt.Text = name
+        Instance.new("UIStroke", txt)
+
+        task.spawn(function()
+            while bill do
+                if not bill.Adornee or not bill.Adornee:IsDescendantOf(workspace) then
+                    bill.Enabled = false
+                    bill.Adornee = nil
+                    bill:Destroy()
+                end
+                task.wait()
+            end
+        end)
+    end
+
+    local ret = {}
+    ret.delete = function()
+        for _, v in pairs(boxes) do
+            v.Adornee = nil
+            v.Visible = false
+            v:Destroy()
+        end
+
+        if bill then
+            bill.Enabled = false
+            bill.Adornee = nil
+            bill:Destroy()
+        end
+    end
+
+    return ret
+end
+
+local function handleItems(val, flags, esptable)
+    if val then
+        local function check(v)
+            if v:IsA("Model") and (v:GetAttribute("Pickup") or v:GetAttribute("PropType")) then
+                task.wait(0.1)
+                
+                local part = (v:FindFirstChild("Handle") or v:FindFirstChild("Prop"))
+                local h = esp(part, Color3.fromRGB(255, 255, 255), part, v.Name)
+                table.insert(esptable.items, h)
+            end
+        end
+        
+        local function setup(room)
+            local assets = room:WaitForChild("Assets")
+            
+            if assets then  
+                local subaddcon
+                subaddcon = assets.DescendantAdded:Connect(function(v)
+                    check(v) 
+                end)
+                
+                for _, v in pairs(assets:GetDescendants()) do
+                    check(v)
+                end
+                
+                task.spawn(function()
+                    repeat task.wait() until not flags.espitems
+                    subaddcon:Disconnect()  
+                end)
+            end 
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espitems
+        addconnect:Disconnect()
+        
+        for _, v in pairs(esptable.items) do
+            v.delete()
+        end 
+    end
+end
+
+section1:toggle({
+    name = "Item ESP",
+    def = false,
+    callback = function(val)
+        local esptable = {items = {}}
+        local flags = {espitems = val}
+        handleItems(val, flags, esptable)
+    end
+})
+
+section1:toggle({
+    name = "Locker/Wardrobe esp",
+    def = false,
+    callback = function(state)
+        if state then
+            _G.ABCDInstances = {}
+            local ABCD = {
+                Rooms_Locker_Fridge = Color3.new(91, 91, 91),
+                Rooms_Locker = Color3.new(78, 78, 78),
+                Wardrobe = Color3.new(91, 91, 91)
+            }
+
+            local function createBillboard(instance, name, color)
+                if not instance or not instance:IsDescendantOf(workspace) then return end
+
+                local bill = Instance.new("BillboardGui", game.CoreGui)
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = instance
+                bill.MaxDistance = 2000
+
+                local mid = Instance.new("Frame", bill)
+                mid.AnchorPoint = Vector2.new(0.5, 0.5)
+                mid.BackgroundColor3 = color
+                mid.Size = UDim2.new(0, 8, 0, 8)
+                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+                Instance.new("UIStroke", mid)
+
+                local txt = Instance.new("TextLabel", bill)
+                txt.AnchorPoint = Vector2.new(0.5, 0.5)
+                txt.BackgroundTransparency = 1
+                txt.TextColor3 = color
+                txt.Size = UDim2.new(1, 0, 0, 20)
+                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+                txt.Text = name
+                Instance.new("UIStroke", txt)
+
+                task.spawn(function()
+                    while bill and bill.Adornee do
+                        if not bill.Adornee:IsDescendantOf(workspace) then
+                            bill:Destroy()
+                            return
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            local function monitorABCD()
+                for name, color in pairs(ABCD) do
+                    -- Check existing instances
+                    for _, instance in pairs(workspace:GetDescendants()) do
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end
+
+                    -- Monitor for new instances
+                    workspace.DescendantAdded:Connect(function(instance)
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end)
+                end
+            end
+
+            monitorABCD()
+
+            table.insert(_G.ABCDInstances, esptable)
+        else
+            if _G.ABCDInstances then
+                for _, instance in pairs(_G.ABCDInstances) do
+                    for _, v in pairs(instance.ABCD) do
+                        v.delete()
+                    end
+                end
+                _G.ABCDInstances = nil
+            end
+        end
     end
 })
