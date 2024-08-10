@@ -507,3 +507,243 @@ function playerEsp()
         end
     end
 end
+
+local function esp(what, color, core, name)
+    local parts
+    if typeof(what) == "Instance" then
+        if what:IsA("Model") then
+            parts = what:GetChildren()
+        elseif what:IsA("BasePart") then
+            parts = {what, table.unpack(what:GetChildren())}
+        end
+    elseif typeof(what) == "table" then
+        parts = what
+    end
+
+    local bill
+    local boxes = {}
+
+    -- Create ESP boxes
+    for _, v in pairs(parts) do
+        if v:IsA("BasePart") then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Size = v.Size
+            box.AlwaysOnTop = true
+            box.ZIndex = 1
+            box.AdornCullingMode = Enum.AdornCullingMode.Never
+            box.Color3 = color
+            box.Transparency = 1
+            box.Adornee = v
+            box.Parent = game.CoreGui
+            
+            table.insert(boxes, box)
+            
+            task.spawn(function()
+                while box do
+                    if box.Adornee == nil or not box.Adornee:IsDescendantOf(workspace) then
+                        box.Adornee = nil
+                        box.Visible = false
+                        box:Destroy()
+                    end  
+                    task.wait()
+                end
+            end)
+        end
+    end
+
+    -- Create BillboardGui if core and name are provided
+    if core and name then
+        bill = Instance.new("BillboardGui", game.CoreGui)
+        bill.AlwaysOnTop = true
+        bill.Size = UDim2.new(0, 400, 0, 100)
+        bill.Adornee = core
+        bill.MaxDistance = 2000
+        
+        local mid = Instance.new("Frame", bill)
+        mid.AnchorPoint = Vector2.new(0.5, 0.5)
+        mid.BackgroundColor3 = color
+        mid.Size = UDim2.new(0, 8, 0, 8)
+        mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+        Instance.new("UIStroke", mid)
+        
+        local txt = Instance.new("TextLabel", bill)
+        txt.AnchorPoint = Vector2.new(0.5, 0.5)
+        txt.BackgroundTransparency = 1
+        txt.BackgroundColor3 = color
+        txt.TextColor3 = color
+        txt.Size = UDim2.new(1, 0, 0, 20)
+        txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+        txt.Text = name
+        Instance.new("UIStroke", txt)
+        
+        task.spawn(function()
+            while bill do
+                if bill.Adornee == nil or not bill.Adornee:IsDescendantOf(workspace) then
+                    bill.Enabled = false
+                    bill.Adornee = nil
+                    bill:Destroy() 
+                end  
+                task.wait()
+            end
+        end)
+    end
+
+    local ret = {}
+    ret.delete = function()
+        for _, v in pairs(boxes) do
+            v.Adornee = nil
+            v.Visible = false
+            v:Destroy()
+        end
+        
+        if bill then
+            bill.Enabled = false
+            bill.Adornee = nil
+            bill:Destroy() 
+        end
+    end
+    
+    return ret
+end
+
+local function setupDoorESP(state)
+    if state then
+        _G.doorESPInstances = {}
+        local esptable = {doors = {}}
+        local flags = {espdoors = true}
+
+        local function setup(room)
+            local door = room:WaitForChild("Door"):WaitForChild("Door")
+            
+            task.wait(0.1)
+            local h = esp(door, Color3.fromRGB(90, 255, 40), door, "Door")
+            table.insert(esptable.doors, h)
+            
+            door:WaitForChild("Open").Played:Connect(function()
+                h.delete()
+            end)
+            
+            door.AncestryChanged:Connect(function()
+                h.delete()
+            end)
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espdoors
+        addconnect:Disconnect()
+        
+        for _, v in pairs(esptable.doors) do
+            v.delete()
+        end 
+    end
+end
+
+-- Example of how to use the setup function with a toggle
+section1:toggle({
+    name = "Door ESP",
+    def = false,
+    callback = function(state)
+        setupDoorESP(state)
+    end
+})
+
+-- Define a variable to control auto-interaction
+local autoInteract = false
+
+-- Function to handle auto-interaction
+local function setupAutoInteract(state)
+    if state then
+        -- Enable auto-interaction
+        autoInteract = true
+
+        -- Get the local player
+        local player = game.Players.LocalPlayer
+
+        -- Connect to room and descendant additions
+        workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            room.DescendantAdded:Connect(function(descendant)
+                if descendant:IsA("Model") then
+                    local prompt = nil
+                    -- Determine the prompt based on the model's name
+                    if descendant.Name == "DrawerContainer" then
+                        prompt = descendant:WaitForChild("Knobs"):WaitForChild("ActivateEventPrompt")
+                    elseif descendant.Name == "GoldPile" then
+                        prompt = descendant:WaitForChild("LootPrompt")
+                    elseif descendant.Name:sub(1, 8) == "ChestBox" or descendant.Name == "RolltopContainer" then
+                        prompt = descendant:WaitForChild("ActivateEventPrompt")
+                    end
+
+                    -- If a prompt is found, set up auto-interaction
+                    if prompt then
+                        local interactions = prompt:GetAttribute("Interactions")
+                        if not interactions then
+                            task.spawn(function()
+                                while autoInteract and not prompt:GetAttribute("Interactions") do
+                                    task.wait(0.1)
+                                    if player:DistanceFromCharacter(descendant.PrimaryPart.Position) <= 12 then
+                                        fireproximityprompt(prompt)
+                                    end
+                                end
+                            end)
+                        end
+                    end
+                end
+            end)
+        end)
+
+        -- Check existing items in current rooms
+        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            for _, descendant in pairs(room:GetDescendants()) do
+                if descendant:IsA("Model") then
+                    local prompt = nil
+                    -- Determine the prompt based on the model's name
+                    if descendant.Name == "DrawerContainer" then
+                        prompt = descendant:WaitForChild("Knobs"):WaitForChild("ActivateEventPrompt")
+                    elseif descendant.Name == "GoldPile" then
+                        prompt = descendant:WaitForChild("LootPrompt")
+                    elseif descendant.Name:sub(1, 8) == "ChestBox" or descendant.Name == "RolltopContainer" then
+                        prompt = descendant:WaitForChild("ActivateEventPrompt")
+                    end
+
+                    -- If a prompt is found, set up auto-interaction
+                    if prompt then
+                        local interactions = prompt:GetAttribute("Interactions")
+                        if not interactions then
+                            task.spawn(function()
+                                while autoInteract and not prompt:GetAttribute("Interactions") do
+                                    task.wait(0.1)
+                                    if player:DistanceFromCharacter(descendant.PrimaryPart.Position) <= 12 then
+                                        fireproximityprompt(prompt)
+                                    end
+                                end
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    else
+        -- Disable auto-interaction
+        autoInteract = false
+    end
+end
+
+-- Example usage
+section2:toggle({
+    name = "look aura",
+    def = false,
+    callback = function(state)
+        setupAutoInteract(state)
+    end
+})
