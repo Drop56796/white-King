@@ -748,103 +748,83 @@ section2:toggle({
     end
 })
 
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+local tpWalkThread
+
+local function tpWalk(speed)
+    while true do
+        task.wait()
+        if Humanoid.MoveDirection.Magnitude > 0 then
+            -- Move the player in the direction they are facing, including vertical movement
+            local moveDirection = Humanoid.MoveDirection * speed
+
+            -- Adjust for swimming: add upward movement if the player is in water
+            if Humanoid:GetState() == Enum.HumanoidStateType.Swimming then
+                moveDirection = moveDirection + Vector3.new(0, speed, 0)
+            end
+
+            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + moveDirection
+        end
+    end
+end
+
+local PlayerTPWalkSpeedSlider = a:AddSlider({
+    Name = "TP Walk",
+    Value = 0,
+    Min = 0,
+    Max = 1,
+    Callback = function(Value)
+        if tpWalkThread then
+            tpWalkThread:Disconnect()
+        end
+
+        -- Start a new tpWalk thread
+        tpWalkThread = coroutine.wrap(function()
+            tpWalk(Value)
+        end)
+        tpWalkThread()
+    end
+})
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
--- Initialize default values
-local isSpeedEnabled = false
-local speedMultiplier = 1
+-- LocalPlayer and Collision initialization
+local player = Players.LocalPlayer
+local collision = player.Character:WaitForChild("Collision")
+local crouch = collision:WaitForChild("CollisionCrouch")
 
--- Function to update character's movement speed
-local function updateSpeed()
-    pcall(function()
-        local player = Players.LocalPlayer
-        local character = player and player.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if isSpeedEnabled then
-                    -- Use speedMultiplier to adjust the movement speed
-                    humanoid.WalkSpeed = speedMultiplier
-                else
-                    -- Disable speed adjustment by setting to default value
-                    humanoid.WalkSpeed = 20 -- Default WalkSpeed value (adjust as needed)
-                end
+-- Variables to manage state
+local isBypassEnabled = false
+local oTick = tick()
+
+-- Function to toggle bypass functionality
+local function toggleBypass(state)
+    if state then
+        -- Start bypass functionality
+        RunService:BindToRenderStep('Bypass', 999, function()
+            if (tick() - oTick) >= 0.2 then
+                crouch.Massless = not crouch.Massless
+                oTick = tick()
             end
-        end
-    end)
+        end)
+    else
+        -- Disable bypass functionality
+        RunService:UnbindFromRenderStep('Bypass')
+        crouch.Massless = false  -- Reset to default state
+    end
 end
-
--- Connect RenderStepped to continuously update character's speed
-RunService.RenderStepped:Connect(updateSpeed)
 
 -- Toggle control
 section2:toggle({
-    name = "Enable Speed",
+    name = "Banned speed Bypass(35%)",
     def = false,
     callback = function(state)
-        isSpeedEnabled = state
-        updateSpeed() -- Update speed immediately when toggle state changes
-    end
-})
-
--- Slider control
-section2:slider({
-    name = "Speed",
-    def = 1,
-    max = 22,
-    min = 1,
-    rounding = true,
-    callback = function(state)
-        speedMultiplier = state
-        updateSpeed() -- Update speed immediately when slider value changes
-    end
-})
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-
--- Initialize default values
-local isFOVEnabled = false
-local fovValue = 70  -- Default FOV value
-
--- Function to update the player's Field of View
-local function updateFOV()
-    pcall(function()
-        local player = Players.LocalPlayer
-        if player and player.Camera then
-            local camera = player.Camera
-            if isFOVEnabled then
-                camera.FieldOfView = fovValue
-            else
-                camera.FieldOfView = 70  -- Default FOV value (adjust if needed)
-            end
-        end
-    end)
-end
-
--- Connect RenderStepped to continuously update the camera's FOV
-RunService.RenderStepped:Connect(updateFOV)
-
--- Toggle control to enable/disable FOV adjustment
-section2:toggle({
-    name = "Enable FOV",
-    def = false,
-    callback = function(state)
-        isFOVEnabled = state
-        updateFOV()  -- Update FOV immediately when toggle state changes
-    end
-})
-
--- Slider control to adjust FOV
-section2:slider({
-    name = "FOV",
-    def = 70,
-    max = 120,
-    min = 70,
-    rounding = true,
-    callback = function(state)
-        fovValue = state
-        updateFOV()  -- Update FOV immediately when slider value changes
+        isBypassEnabled = state
+        toggleBypass(state)
     end
 })
