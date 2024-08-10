@@ -1032,12 +1032,12 @@ section2:toggle({
 section1:toggle({
     name = "book/paper ESP",
     def = false,
-    callback = function(book)
-        if book then
-            book = {}
-            local itemTypes = {
-                LiveBreakerPolePickup = Color3.new(1, 0, 0),
-                LiveHintBook = Color3.new(0, 1, 1)
+    callback = function(state)
+        if state then
+            _G.naespInstances = {}
+            local naesp = {
+                LiveHintBook = Color3.new(0, 1, 0),
+                LiveBreakerPolePickup = Color3.new(0, 0, 1)
             }
 
             local function createBillboard(instance, name, color)
@@ -1077,8 +1077,8 @@ section1:toggle({
                 end)
             end
 
-            local function book()
-                for name, color in pairs(book) do
+            local function naesp()
+                for name, color in pairs(naesp) do
                     -- Check existing instances
                     for _, instance in pairs(workspace:GetDescendants()) do
                         if instance:IsA("Model") and instance.Name == name then
@@ -1095,17 +1095,17 @@ section1:toggle({
                 end
             end
 
-            book()
+            monitornaesp()
 
-            table.insert(book, esptable)
+            table.insert(_G.naespInstances, esptable)
         else
-            if book then
-                for _, instance in pairs(book) do
-                    for _, v in pairs(instance.book) do
+            if _G.naespInstances then
+                for _, instance in pairs(_G.naespInstances) do
+                    for _, v in pairs(instance.naesp) do
                         v.delete()
                     end
                 end
-                book = nil
+                _G.naespInstances = nil
             end
         end
     end
