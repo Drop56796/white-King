@@ -120,6 +120,50 @@ section3:toggle({
     end
 })
 
+section3:toggle({
+    name = "Add Toggle ui",
+    def = false,
+    callback = function(state)
+        if state then
+            -- 如果不存在 ScreenGui，则创建一个
+            local gui = game:GetService("CoreGui"):FindFirstChild("ScreenGui")
+            if not gui then
+                gui = Instance.new("ScreenGui")
+                gui.Name = "ScreenGui"
+                gui.Parent = game:GetService("CoreGui")
+            end
+
+            -- 确保 GUI 是启用状态
+            gui.Enabled = true
+
+            -- 创建控制按钮的 GUI
+            local toggleGuiScreen = Instance.new("ScreenGui")
+            toggleGuiScreen.Name = "ToggleGuiScreen"
+            toggleGuiScreen.Parent = game:GetService("CoreGui")
+
+            local toggleButton = Instance.new("TextButton")
+            toggleButton.Size = UDim2.new(0, 100, 0, 50)
+            toggleButton.Position = UDim2.new(0, 50, 0, 200)
+            toggleButton.Text = "Toggle GUI"
+            toggleButton.Parent = toggleGuiScreen
+            toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+            toggleButton.TextColor3 = Color3.new(1, 1, 1)
+
+            -- Toggle 功能
+            local function toggleGui()
+                gui.Enabled = not gui.Enabled
+            end
+
+            toggleButton.MouseButton1Click:Connect(toggleGui)
+        else
+            -- 关闭/隐藏UI
+            local gui = game:GetService("CoreGui"):FindFirstChild("ToggleGuiScreen")
+            if gui then
+                gui.Enabled = false
+            end
+        end
+    end
+})
 
 section2:toggle({
     name = "FullBright",
