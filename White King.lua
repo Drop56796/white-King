@@ -1298,18 +1298,14 @@ section2:toggle({
     name = "Library Code Notification",
     def = false,
     callback = function(state)
-        local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))() -- Lib1
-        local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))() -- Lib2
-
         if state then
-            -- Initialize the global table for event connections
-            _G.codeEventInstances = {}
+            local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+            local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+            _G.codeEventInstances = _G.codeEventInstances or {}
 
-            -- Function to decipher the code from the LibraryHintPaper
             local function decipherCode()
                 local paper = char:FindFirstChild("LibraryHintPaper")
                 local hints = plr.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
-                
                 local code = {[1]="_", [2]="_", [3]="_", [4]="_", [5]="_"}
 
                 if paper then
@@ -1328,34 +1324,31 @@ section2:toggle({
                 return code
             end
             
-            -- Handle when a new child is added to the character
-            local function onChildAdded(child)
-                if child:IsA("Tool") and child.Name == "LibraryHintPaper" then
+            local addConnect
+            addConnect = char.ChildAdded:Connect(function(v)
+                if v:IsA("Tool") and v.Name == "LibraryHintPaper" then
                     task.wait()
                     local code = table.concat(decipherCode())
 
                     if code:find("_") then
                         Notification:Notify(
-                            {Title = "White King Notification", Description = "You have not found all the books"},
+                            {Title = "White King Notification", Description = "You need to get all books"},
                             {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
-                            {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
+                            {Image = "http://www.roblox.com/asset/?id=13327193518", ImageColor = Color3.fromRGB(255, 255, 255)}
                         )
                     else
                         Notification:Notify(
                             {Title = "White King Notification", Description = "Code is " .. code},
                             {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
-                            {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
+                            {Image = "http://www.roblox.com/asset/?id=13327193518", ImageColor = Color3.fromRGB(255, 255, 255)}
                         )
                     end
                 end
-            end
-
-            -- Connect to the character's ChildAdded event
-            local connection = char.ChildAdded:Connect(onChildAdded)
-            table.insert(_G.codeEventInstances, connection)
+            end)
+            
+            table.insert(_G.codeEventInstances, addConnect)
 
         else
-            -- Disconnect and clean up all stored event connections
             if _G.codeEventInstances then
                 for _, instance in pairs(_G.codeEventInstances) do
                     if instance and instance.Connected then
