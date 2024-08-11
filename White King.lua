@@ -1295,22 +1295,25 @@ section2:toggle({
 })
 
 section2:toggle({
-    name = "Code Notification(Beta)",
+    name = "Library Code Notification",
     def = false,
     callback = function(state)
+        local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))() -- Lib1
+        local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))() -- Lib2
+
         if state then
-            -- Create a global table to store connections if not already present
+            -- Initialize the global table for event connections
             _G.codeEventInstances = {}
 
             -- Function to decipher the code from the LibraryHintPaper
-            local function deciphercode()
+            local function decipherCode()
                 local paper = char:FindFirstChild("LibraryHintPaper")
                 local hints = plr.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
-
+                
                 local code = {[1]="_", [2]="_", [3]="_", [4]="_", [5]="_"}
-                    
+
                 if paper then
-                    for i, v in pairs(paper:WaitForChild("UI"):GetChildren()) do
+                    for _, v in pairs(paper:WaitForChild("UI"):GetChildren()) do
                         if v:IsA("ImageLabel") and v.Name ~= "Image" then
                             for _, img in pairs(hints:GetChildren()) do
                                 if img:IsA("ImageLabel") and img.Visible and v.ImageRectOffset == img.ImageRectOffset then
@@ -1325,16 +1328,15 @@ section2:toggle({
                 return code
             end
             
-            -- Connect to the character's ChildAdded event
-            local addconnect
-            addconnect = char.ChildAdded:Connect(function(v)
-                if v:IsA("Tool") and v.Name == "LibraryHintPaper" then
+            -- Handle when a new child is added to the character
+            local function onChildAdded(child)
+                if child:IsA("Tool") and child.Name == "LibraryHintPaper" then
                     task.wait()
-                    local code = table.concat(deciphercode())
+                    local code = table.concat(decipherCode())
 
                     if code:find("_") then
                         Notification:Notify(
-                            {Title = "White King Notification", Description = "You not get all books"},
+                            {Title = "White King Notification", Description = "You have not found all the books"},
                             {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
                             {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
                         )
@@ -1346,10 +1348,11 @@ section2:toggle({
                         )
                     end
                 end
-            end)
-            
-            -- Store the connection in the global table
-            table.insert(_G.codeEventInstances, addconnect)
+            end
+
+            -- Connect to the character's ChildAdded event
+            local connection = char.ChildAdded:Connect(onChildAdded)
+            table.insert(_G.codeEventInstances, connection)
 
         else
             -- Disconnect and clean up all stored event connections
