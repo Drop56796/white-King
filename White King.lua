@@ -1510,3 +1510,37 @@ section2:toggle({
     end
 })
 
+-- 定义变量来存储滑块的值和切换状态
+local isEnabled = false
+local speedValue = 16
+
+-- 创建切换开关和滑块的组合功能
+section2:toggle({
+    name = "Enable Speed Control",
+    def = false,
+    callback = function(state)
+        isEnabled = state
+        -- 当切换开关被禁用时，重置速度为默认值
+        if not isEnabled then
+            startTpWalk(1) -- 重置为默认速度
+        else
+            startTpWalk(speedValue) -- 根据滑块的值设置速度
+        end
+    end
+})
+
+-- 创建滑块
+section2:slider({
+    name = "Speed",
+    def = 20,   -- 默认速度值
+    max = 22,  -- 最大速度值
+    min = 1,   -- 最小速度值
+    rounding = true,
+    callback = function(value)
+        speedValue = value
+        -- 如果切换开关是开启的，则应用滑块的值
+        if isEnabled then
+            startTpWalk(value)
+        end
+    end
+})
