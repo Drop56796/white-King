@@ -1,3 +1,38 @@
+-- 获取 CoreGui 下的 ScreenGui
+local gui = game:GetService("CoreGui"):FindFirstChild("ScreenGui")
+
+-- 如果不存在，则创建一个新的 ScreenGui
+if not gui then
+    gui = Instance.new("ScreenGui")
+    gui.Name = "ScreenGui"
+    gui.Parent = game:GetService("CoreGui")
+end
+
+-- 初始状态下确保 ScreenGui 是显示的
+gui.Enabled = true
+
+-- 创建一个用于存放 Toggle Button 的独立 ScreenGui
+local toggleGuiScreen = Instance.new("ScreenGui")
+toggleGuiScreen.Name = "ToggleGuiScreen"
+toggleGuiScreen.Parent = game:GetService("CoreGui")
+
+-- 创建 Toggle Button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 100, 0, 50)
+toggleButton.Position = UDim2.new(0, 50, 0, 200)
+toggleButton.Text = "Toggle UI"
+toggleButton.Parent = toggleGuiScreen
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+
+-- Toggle 功能
+local function toggleGui()
+    gui.Enabled = not gui.Enabled
+end
+
+-- 绑定点击事件到 toggleGui 函数
+toggleButton.MouseButton1Click:Connect(toggleGui)
+
 local library = loadstring(game:HttpGet("https://github.com/Drop56796/CreepyEyeHub/blob/main/Splix.lua?raw=true"))()
 
 -- Create a new window
