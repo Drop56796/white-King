@@ -529,7 +529,7 @@ local function toggleThirdPerson(state)
 end
 
 -- Toggle control
-section1:toggle({
+section2:toggle({
     name = "Enable Third View",
     def = false,
     callback = function(state)
@@ -1155,55 +1155,6 @@ section2:toggle({
     end
 })
 
-section2:toggle({
-    name = "Enity Notification",
-    def = false,
-    callback = function(isEnabled)
-        local entityNames = {"AmbushMoving", "RushMoving", "Snare", "A120", "A60", "Eyes", "JeffTheKiller"}
-        local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
-        local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
-        local addconnect
-
-        -- Function to handle notifications
-        local function handleNotification(v)
-            -- Check if the item is within range and still in the workspace
-            repeat task.wait() until plr:DistanceFromCharacter(v:GetPivot().Position) < 1000 or not v:IsDescendantOf(workspace)
-            
-            if v:IsDescendantOf(workspace) then
-                Notification:Notify(
-                    {Title = "White KING Notification", Description = v.Name:gsub("Moving",""):lower().." Spawned Please hide!"},
-                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
-                    {Image = "http://www.roblox.com/asset/?id=13327193518", ImageColor = Color3.fromRGB(255, 255, 255)}
-                )
-            end
-        end
-
-        -- Start monitoring for new items
-        if isEnabled then
-            addconnect = workspace.ChildAdded:Connect(function(v)
-                if table.find(entitynames, v.Name) then
-                    handleNotification(v)
-                end
-            end)
-        else
-            -- Disconnect the connection when notifications are disabled
-            if addconnect then
-                addconnect:Disconnect()
-            end
-        end
-
-        -- Clean up when toggle is disabled
-        task.spawn(function()
-            while isEnabled do
-                task.wait(1)
-            end
-            if addconnect then
-                addconnect:Disconnect()
-            end
-        end)
-    end
-})
-
 section1:toggle({
     name = "Lever esp",
     def = false,
@@ -1280,6 +1231,135 @@ section1:toggle({
                     end
                 end
                 _G.ABCInstances = nil
+            end
+        end
+    end
+})
+
+section2:toggle({
+    name = "Entity Notification",
+    def = false,
+    callback = function(state)
+        if state then
+            local entityNames = {"RushMoving", "AmbushMoving", "Snare", "A60", "A120", "A90", "Eyes", "JeffTheKiller"}  -- Entities to monitor
+            local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))() -- Lib1
+            local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))() -- Lib2
+
+            -- Ensure flags and plr are defined
+            local flags = flags or {} -- Prevent error
+            local plr = game.Players.LocalPlayer -- Reference to the local player
+
+            -- Function to notify when an entity spawns
+            local function notifyEntitySpawn(entity)
+                Notification:Notify(
+                    {Title = "White King Notification", Description = entity.Name:gsub("Moving", ""):lower() .. " Spawned go hide!"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
+                )
+            end
+
+            -- Function to handle when a new child is added to the workspace
+            local function onChildAdded(child)
+                if table.find(entityNames, child.Name) then
+                    repeat
+                        task.wait()
+                    until plr:DistanceFromCharacter(child:GetPivot().Position) < 1000 or not child:IsDescendantOf(workspace)
+
+                    if child:IsDescendantOf(workspace) then
+                        notifyEntitySpawn(child)
+                    end
+                end
+            end
+
+            -- Keep track of the running state and manage connections
+            local running = true
+            local connection
+
+            -- Infinite loop to maintain the script
+            task.spawn(function()
+                while running do
+                    connection = workspace.ChildAdded:Connect(onChildAdded)
+                    
+                    repeat
+                        task.wait(1) -- Adjust the wait time as needed
+                    until not flags.hintrush or not running
+                    
+                    connection:Disconnect()
+                end
+            end)
+        else
+            -- Cleanup: Stop the script from running
+            running = false
+        end
+    end
+})
+
+section2:toggle({
+    name = "Code Notification(Beta)",
+    def = false,
+    callback = function(state)
+        if state then
+            -- Create a global table to store connections if not already present
+            _G.codeEventInstances = {}
+
+            -- Function to decipher the code from the LibraryHintPaper
+            local function deciphercode()
+                local paper = char:FindFirstChild("LibraryHintPaper")
+                local hints = plr.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
+
+                local code = {[1]="_", [2]="_", [3]="_", [4]="_", [5]="_"}
+                    
+                if paper then
+                    for i, v in pairs(paper:WaitForChild("UI"):GetChildren()) do
+                        if v:IsA("ImageLabel") and v.Name ~= "Image" then
+                            for _, img in pairs(hints:GetChildren()) do
+                                if img:IsA("ImageLabel") and img.Visible and v.ImageRectOffset == img.ImageRectOffset then
+                                    local num = img:FindFirstChild("TextLabel").Text
+                                    code[tonumber(v.Name)] = num 
+                                end
+                            end
+                        end
+                    end 
+                end
+                
+                return code
+            end
+            
+            -- Connect to the character's ChildAdded event
+            local addconnect
+            addconnect = char.ChildAdded:Connect(function(v)
+                if v:IsA("Tool") and v.Name == "LibraryHintPaper" then
+                    task.wait()
+                    local code = table.concat(deciphercode())
+
+                    if code:find("_") then
+                        Notification:Notify(
+                            {Title = "White King Notification", Description = "You not get all books"},
+                            {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
+                            {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
+                        )
+                    else
+                        Notification:Notify(
+                            {Title = "White King Notification", Description = "Code is " .. code},
+                            {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
+                            {Image = "http://www.roblox.com/asset/?id=18394059300", ImageColor = Color3.fromRGB(255, 255, 255)}
+                        )
+                    end
+                end
+            end)
+            
+            -- Store the connection in the global table
+            table.insert(_G.codeEventInstances, addconnect)
+
+        else
+            -- Disconnect and clean up all stored event connections
+            if _G.codeEventInstances then
+                for _, instance in pairs(_G.codeEventInstances) do
+                    if instance and instance.Connected then
+                        instance:Disconnect()
+                    end
+                end
+                _G.codeEventInstances = nil
             end
         end
     end
