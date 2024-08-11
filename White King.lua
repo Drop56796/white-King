@@ -13,6 +13,15 @@ local tab = window:page({
     name = "main"
 })
 
+local tab2 = window:page({
+    name = "UI Setting"
+})
+local section3 = tab2:section({
+    name = "Ui add",
+    side = "left",
+    size = 250
+})
+
 -- Create a section in the tab
 local section1 = tab:section({
     name = "esp",
@@ -1366,6 +1375,89 @@ section2:toggle({
                     end
                 end
                 _G.codeEventInstances = nil
+            end
+        end
+    end
+})
+
+section3:toggle({
+    name = "close/open Notification (FPS MS)",
+    def = false,
+    callback = function(state)
+        if state then
+            -- 创建屏幕GUI
+            local screenGui = Instance.new("ScreenGui")
+            screenGui.Name = "LibraryCodeNotificationGUI"
+            screenGui.Parent = game:GetService("CoreGui") -- 添加到CoreGui
+
+            -- 创建主框架
+            local mainFrame = Instance.new("Frame")
+            mainFrame.Size = UDim2.new(0, 600, 0, 50)
+            mainFrame.Position = UDim2.new(0, 10, 0, 10)
+            mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+            mainFrame.BorderSizePixel = 2
+            mainFrame.BorderColor3 = Color3.new(1, 1, 1)
+            mainFrame.Parent = screenGui
+
+            -- 创建名字标签
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(0, 170, 0, 50)
+            nameLabel.Position = UDim2.new(0, 10, 0, 0)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.TextColor3 = Color3.new(1, 1, 1)
+            nameLabel.TextStrokeTransparency = 0
+            nameLabel.Text = "White King" -- 这里可以替换成你想要显示的名字
+            nameLabel.Font = Enum.Font.Code
+            nameLabel.TextScaled = true
+            nameLabel.Parent = mainFrame
+
+            -- 创建FPS标签
+            local fpsLabel = Instance.new("TextLabel")
+            fpsLabel.Size = UDim2.new(0, 175, 0, 50)
+            fpsLabel.Position = UDim2.new(1, -370, 0, 0)
+            fpsLabel.BackgroundTransparency = 1
+            fpsLabel.TextColor3 = Color3.new(1, 1, 1)
+            fpsLabel.TextStrokeTransparency = 0
+            fpsLabel.Text = "FPS: 0"
+            fpsLabel.Font = Enum.Font.Code
+            fpsLabel.TextScaled = true
+            fpsLabel.Parent = mainFrame
+
+            -- 创建MS标签
+            local msLabel = Instance.new("TextLabel")
+            msLabel.Size = UDim2.new(0, 175, 0, 50)
+            msLabel.Position = UDim2.new(1, -175, 0, 0)
+            msLabel.BackgroundTransparency = 1
+            msLabel.TextColor3 = Color3.new(1, 1, 1)
+            msLabel.TextStrokeTransparency = 0
+            msLabel.Text = "MS: 0"
+            msLabel.Font = Enum.Font.Code
+            msLabel.TextScaled = true
+            msLabel.Parent = mainFrame
+
+            -- 更新FPS和MS
+            local runService = game:GetService("RunService")
+            local lastTime = tick()
+            local frameCount = 0
+
+            runService.RenderStepped:Connect(function()
+                frameCount = frameCount + 1
+                local currentTime = tick()
+                if currentTime - lastTime >= 1 then
+                    local fps = frameCount / (currentTime - lastTime)
+                    fpsLabel.Text = string.format("FPS: %.2f", fps)
+                    frameCount = 0
+                    lastTime = currentTime
+                end
+
+                local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
+                msLabel.Text = string.format("MS: %.2f", ping)
+            end)
+        else
+            -- 关闭UI
+            local gui = game:GetService("CoreGui"):FindFirstChild("LibraryCodeNotificationGUI")
+            if gui then
+                gui:Destroy()
             end
         end
     end
