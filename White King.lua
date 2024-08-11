@@ -893,11 +893,12 @@ section1:toggle({
     end
 })
 
-section1:toggle({
+section2:toggle({
     name = "Item ESP",
     def = false,
     callback = function(isEnabled)
         local highlightedItems = {}
+        local monitoredRooms = {}
 
         -- Define the esp function inside the toggle callback
         local function esp(what, color, core, name)
@@ -937,6 +938,7 @@ section1:toggle({
                                 box.Adornee = nil
                                 box.Visible = false
                                 box:Destroy()
+                                break
                             end  
                             task.wait()
                         end
@@ -976,7 +978,8 @@ section1:toggle({
                             bill.Enabled = false
                             bill.Adornee = nil
                             bill:Destroy() 
-                        end  
+                            break
+                        end
                         task.wait()
                     end
                 end)
@@ -1023,57 +1026,65 @@ section1:toggle({
                 end
 
                 -- Monitor for new items added to the assets
-                local connection = assets.DescendantAdded:Connect(function(descendant)
+                assets.DescendantAdded:Connect(function(descendant)
                     highlightItem(descendant)
-                        end)
-
-                -- Disconnect the connection when ESP is disabled
-                task.spawn(function()
-                    while isEnabled do
-                        task.wait(1)
-                    end
-                    connection:Disconnect()
-
-                    -- Cleanup highlighted items when ESP is disabled
-                    for _, espInstance in ipairs(highlightedItems) do
-                        espInstance.delete()
-                    end
                 end)
             end
         end
 
-        -- If ESP is enabled, start monitoring the rooms
-        if isEnabled then
+        -- Start monitoring the rooms and handle dynamic updates
+        local function startMonitoring()
             -- Monitor current rooms
             for _, room in ipairs(workspace.CurrentRooms:GetChildren()) do
                 monitorRoom(room)
+                monitoredRooms[room] = true
             end
 
             -- Monitor newly added rooms
-            local roomAddedConnection = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            workspace.CurrentRooms.ChildAdded:Connect(function(room)
                 monitorRoom(room)
+                monitoredRooms[room] = true
             end)
+        end
 
-            -- Clean up when ESP is disabled
+        -- Manage the toggle state
+        if isEnabled then
+            startMonitoring()
+            
+            -- Keep monitoring and updating while enabled
             task.spawn(function()
                 while isEnabled do
+                    -- Remove any items that are no longer in the workspace
+                    for _, espInstance in pairs(highlightedItems) do
+                        espInstance.delete()
+                    end
+                    highlightedItems = {}
+
+                    -- Reapply ESP to all currently visible items
+                    for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                        monitorRoom(room)
+                    end
+
                     task.wait(1)
                 end
-                roomAddedConnection:Disconnect()
-
-                -- Cleanup highlighted items
-                for _, espInstance in ipairs(highlightedItems) do
+                
+                -- Clean up when ESP is disabled
+                for _, espInstance in pairs(highlightedItems) do
                     espInstance.delete()
                 end
+                highlightedItems = {}
             end)
         else
-            -- Cleanup if disabled
-            for _, espInstance in ipairs(highlightedItems) do
+            -- Clean up if disabled
+            for _, espInstance in pairs(highlightedItems) do
                 espInstance.delete()
             end
         end
     end
 })
+
+local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
 
 section2:toggle({
     name = "Enity Notification",
@@ -1166,7 +1177,7 @@ section3:toggle({
 
         -- Start or stop auto-click based on toggle state
         if isEnabled then
-            fireProximityPrompt("keyObtain", 2)
+            fireProximityPrompt("keyObtain", 20)
         end
 
         -- Cleanup when disabled
