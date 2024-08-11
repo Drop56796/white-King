@@ -893,6 +893,88 @@ section1:toggle({
     end
 })
 
+section1:toggle({
+    name = "Book/Paper ESP",
+    def = false,
+    callback = function(val)
+        if val then
+            _G.DoorInstances = {}
+            local DoorItems = {
+                LiveHintBook = Color3.new(1, 0, 0), 
+                LiveBreakerPolePickup = Color3.new(1, 0, 0),
+            }
+
+            local function createDooDoorBillboard(instance, name, color)
+                if not instance or not instance:IsDescendantOf(workspace) then return end
+
+                local bill = Instance.new("BillboardGui", game.CoreGui)
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = instance
+                bill.MaxDistance = 2000
+
+                local mid = Instance.new("Frame", bill)
+                mid.AnchorPoint = Vector2.new(0.5, 0.5)
+                mid.BackgroundColor3 = color
+                mid.Size = UDim2.new(0, 8, 0, 8)
+                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+                Instance.new("UIStroke", mid)
+
+                local txt = Instance.new("TextLabel", bill)
+                txt.AnchorPoint = Vector2.new(0.5, 0.5)
+                txt.BackgroundTransparency = 1
+                txt.TextColor3 = color
+                txt.Size = UDim2.new(1, 0, 0, 20)
+                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+                txt.Text = name
+                Instance.new("UIStroke", txt)
+
+                task.spawn(function()
+                    while bill and bill.Adornee do
+                        if not bill.Adornee:IsDescendantOf(workspace) then
+                            bill:Destroy()
+                            return
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            local function monitorDoorItems()
+                for name, color in pairs(DoorItems) do
+                    -- Check existing instances
+                    for _, instance in pairs(workspace:GetDescendants()) do
+                        if instance:IsA("Model") and instance.Name == name then
+                            createDooDoorBillboard(instance, name, color)
+                        end
+                    end
+
+                    -- Monitor for new instances
+                    workspace.DescendantAdded:Connect(function(instance)
+                        if instance:IsA("Model") and instance.Name == name then
+                            createDooDoorBillboard(instance, name, color)
+                        end
+                    end)
+                end
+            end
+
+            monitorDoorItems()
+
+            table.insert(_G.DoorInstances, esptable)
+        else
+            if _G.DoorInstances then
+                for _, instance in pairs(_G.DoorInstances) do
+                    for _, v in pairs(instance.Door) do
+                        v.delete()
+                    end
+                end
+                _G.DoorInstances = nil
+            end
+        end
+    end
+})
+
 section2:toggle({
     name = "Item ESP",
     def = false,
@@ -926,7 +1008,7 @@ section2:toggle({
                     box.ZIndex = 1
                     box.AdornCullingMode = Enum.AdornCullingMode.Never
                     box.Color3 = color
-                    box.Transparency = 0.5
+                    box.Transparency = 1
                     box.Adornee = v
                     box.Parent = game.CoreGui
 
@@ -1083,13 +1165,12 @@ section2:toggle({
     end
 })
 
-local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
-
 section2:toggle({
     name = "Enity Notification",
     def = false,
     callback = function(isEnabled)
+        local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+        local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
         local addconnect
 
         -- Function to handle notifications
@@ -1133,7 +1214,7 @@ section2:toggle({
 })
 
 section3:toggle({
-    name = "Auto Click Key",
+    name = "Look aura {Key}",
     def = false,
     callback = function(isEnabled)
         local function fireProximityPrompt(modelName, distanceThreshold)
@@ -1177,7 +1258,7 @@ section3:toggle({
 
         -- Start or stop auto-click based on toggle state
         if isEnabled then
-            fireProximityPrompt("keyObtain", 20)
+            fireProximityPrompt("KeyObtain", 20)
         end
 
         -- Cleanup when disabled
@@ -1189,3 +1270,5 @@ section3:toggle({
         end)
     end
 })
+
+-- Toggle to activate the Lever ESP
