@@ -1,4 +1,4 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Splix"))()
+local library = loadstring(game:HttpGet("https://github.com/Drop56796/CreepyEyeHub/blob/main/Splix.lua?raw=true"))()
 
 -- Create a new window
 local window = library:new({
