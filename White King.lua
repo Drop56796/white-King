@@ -1510,37 +1510,70 @@ section2:toggle({
     end
 })
 
--- 定义变量来存储滑块的值和切换状态
-local isEnabled = false
-local speedValue = 16
+local isFOVControlEnabled = false
+local isSpeedControlEnabled = false
+local fovValue = 70
+local speedValue = 1
 
--- 创建切换开关和滑块的组合功能
+-- 创建视野控制切换开关和滑块
 section2:toggle({
-    name = "Enable Speed Control",
+    name = "Enable FOV",
     def = false,
     callback = function(state)
-        isEnabled = state
-        -- 当切换开关被禁用时，重置速度为默认值
-        if not isEnabled then
-            startTpWalk(1) -- 重置为默认速度
+        isFOVControlEnabled = state
+        -- 根据切换开关的状态来设置视野
+        if isFOVControlEnabled then
+            game:GetService("Workspace").CurrentCamera.FieldOfView = fovValue
         else
-            startTpWalk(speedValue) -- 根据滑块的值设置速度
+            -- 可以选择重置为默认值或者保持当前值
+            -- 这里我们保持当前值，不做重置
         end
     end
 })
 
--- 创建滑块
+-- 创建视野调节滑块
+section2:slider({
+    name = "FOV",
+    def = 70,
+    max = 120,
+    min = 70,
+    rounding = true,
+    callback = function(value)
+        fovValue = value
+        if isFOVControlEnabled then
+            -- 如果视野控制启用，更新视野
+            game:GetService("Workspace").CurrentCamera.FieldOfView = fovValue
+        end
+    end
+})
+
+-- 创建速度控制切换开关和滑块
+section2:toggle({
+    name = "Enable Speed",
+    def = false,
+    callback = function(state)
+        isSpeedControlEnabled = state
+        -- 根据切换开关的状态来设置速度
+        if isSpeedControlEnabled then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speedValue
+        else
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16  -- 重置为默认速度
+        end
+    end
+})
+
+-- 创建速度调节滑块
 section2:slider({
     name = "Speed",
-    def = 20,   -- 默认速度值
-    max = 22,  -- 最大速度值
-    min = 1,   -- 最小速度值
+    def = 20,
+    max = 22,
+    min = 20,
     rounding = true,
     callback = function(value)
         speedValue = value
-        -- 如果切换开关是开启的，则应用滑块的值
-        if isEnabled then
-            startTpWalk(value)
+        if isSpeedControlEnabled then
+            -- 如果速度控制启用，更新速度
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speedValue
         end
     end
 })
