@@ -1169,6 +1169,7 @@ section2:toggle({
     name = "Enity Notification",
     def = false,
     callback = function(isEnabled)
+        local entityNames = {"AmbushMoving", "RushMoving", "Snare", "A120", "A60", "Eyes", "JeffTheKiller"}
         local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
         local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
         local addconnect
