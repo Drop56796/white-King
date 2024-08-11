@@ -1271,4 +1271,141 @@ section3:toggle({
     end
 })
 
--- Toggle to activate the Lever ESP
+section1:toggle({
+    name = "Lever esp",
+    def = false,
+    callback = function(isEnabled)
+        if state then
+            _G.ABCInstances = {}
+            local ABC = {
+                LeverForGate = Color3.new(1, 10, 100)
+            }
+
+            local function createBillboard(instance, name, color)
+                if not instance or not instance:IsDescendantOf(workspace) then return end
+
+                local bill = Instance.new("BillboardGui", game.CoreGui)
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = instance
+                bill.MaxDistance = 2000
+
+                local mid = Instance.new("Frame", bill)
+                mid.AnchorPoint = Vector2.new(0.5, 0.5)
+                mid.BackgroundColor3 = color
+                mid.Size = UDim2.new(0, 8, 0, 8)
+                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+                Instance.new("UIStroke", mid)
+
+                local txt = Instance.new("TextLabel", bill)
+                txt.AnchorPoint = Vector2.new(0.5, 0.5)
+                txt.BackgroundTransparency = 1
+                txt.TextColor3 = color
+                txt.Size = UDim2.new(1, 0, 0, 20)
+                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+                txt.Text = name
+                Instance.new("UIStroke", txt)
+
+                task.spawn(function()
+                    while bill and bill.Adornee do
+                        if not bill.Adornee:IsDescendantOf(workspace) then
+                            bill:Destroy()
+                            return
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            local function monitorABC()
+                for name, color in pairs(ABC) do
+                    -- Check existing instances
+                    for _, instance in pairs(workspace:GetDescendants()) do
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end
+
+                    -- Monitor for new instances
+                    workspace.DescendantAdded:Connect(function(instance)
+                        if instance:IsA("Model") and instance.Name == name then
+                            createBillboard(instance, name, color)
+                        end
+                    end)
+                end
+            end
+
+            monitorABC()
+
+            table.insert(_G.ABCInstances, esptable)
+        else
+            if _G.ABCInstances then
+                for _, instance in pairs(_G.ABCInstances) do
+                    for _, v in pairs(instance.ABC) do
+                        v.delete()
+                    end
+                end
+                _G.ABCInstances = nil
+            end
+        end
+    end
+})
+
+section2:toggle({
+    name = "Look aura {Lever}",
+    def = false,
+    callback = function(isEnabled)
+        local function fireProximityPrompt(modelName, distanceThreshold)
+            -- Function to check distance and trigger prompt
+            local function checkDistance()
+                local model = workspace:FindFirstChild(modelName)
+                if not model then
+                    warn("Model not found:", modelName)
+                    return
+                end
+
+                local prompt = model:FindFirstChildWhichIsA("ProximityPrompt")
+                if not prompt then
+                    warn("ProximityPrompt not found in model:", modelName)
+                    return
+                end
+
+                local function onHeartbeat()
+                    if not isEnabled then
+                        return
+                    end
+
+                    local player = game.Players.LocalPlayer
+                    local character = player.Character
+                    if not character then return end
+
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+
+                    local distance = (hrp.Position - model.PrimaryPart.Position).Magnitude
+                    if distance < distanceThreshold then
+                        prompt:Fire() -- Simulate the action of clicking the prompt
+                    end
+                end
+
+                game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
+            end
+
+            checkDistance()
+        end
+
+        -- Start or stop auto-click based on toggle state
+        if isEnabled then
+            fireProximityPrompt("LeverForGate", 20)
+        end
+
+        -- Cleanup when disabled
+        task.spawn(function()
+            while isEnabled do
+                task.wait(1)
+            end
+            -- You might need to add additional cleanup code here if necessary
+        end)
+    end
+})
