@@ -663,92 +663,155 @@ section1:toggle({
         end
     end
 })
-section1:toggle({
-    name = "Entity ESP",
+section2:toggle({
+    name = "Entity ESP and Notification",
     def = false,
-    callback = function(val)
-       if state then
-            _G.nahESPInstances = {}
-            local itemTypes = {
-                RushMoving = Color3.new(0, 1, 0),
-                AmbushMoving = Color3.new(0, 0, 1),
-                Snare = Color3.new(1, 1, 1),
-                A120 = Color3.new(1, 1, 1),
-                A60 = Color3.new(1, 1, 1),
-                Eyes = Color3.new(1, 1, 1),
-                JeffTheKiller = Color3.new(1, 1, 1)
-            }
+    callback = function(isEnabled)
+        local esptable = { entity = {} }
+        local flags = { esprush = isEnabled }
+        local entityNames = {"RushMoving", "AmbushMoving", "Snare", "A60", "A120", "A90", "Eyes", "JeffTheKiller"}
 
-            local function createBillboard(instance, name, color)
-                if not instance or not instance:IsDescendantOf(workspace) then return end
+        -- Function to create ESP effects
+        local function createESP(part, color, core, name)
+            local boxAdornment
+            local billboardGui
 
-                local bill = Instance.new("BillboardGui", game.CoreGui)
-                bill.AlwaysOnTop = true
-                bill.Size = UDim2.new(0, 100, 0, 50)
-                bill.Adornee = instance
-                bill.MaxDistance = 2000
-
-                local mid = Instance.new("Frame", bill)
-                mid.AnchorPoint = Vector2.new(0.5, 0.5)
-                mid.BackgroundColor3 = color
-                mid.Size = UDim2.new(0, 8, 0, 8)
-                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
-                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
-                Instance.new("UIStroke", mid)
-
-                local txt = Instance.new("TextLabel", bill)
-                txt.AnchorPoint = Vector2.new(0.5, 0.5)
-                txt.BackgroundTransparency = 1
-                txt.TextColor3 = color
-                txt.Size = UDim2.new(1, 0, 0, 20)
-                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
-                txt.Text = name
-                Instance.new("UIStroke", txt)
+            if part and part:IsA("BasePart") then
+                boxAdornment = Instance.new("BoxHandleAdornment")
+                boxAdornment.Size = part.Size
+                boxAdornment.AlwaysOnTop = true
+                boxAdornment.ZIndex = 1
+                boxAdornment.AdornCullingMode = Enum.AdornCullingMode.Never
+                boxAdornment.Color3 = color
+                boxAdornment.Transparency = 0.5
+                boxAdornment.Adornee = part
+                boxAdornment.Parent = game.CoreGui
 
                 task.spawn(function()
-                    while bill and bill.Adornee do
-                        if not bill.Adornee:IsDescendantOf(workspace) then
-                            bill:Destroy()
-                            return
+                    while boxAdornment do
+                        if not boxAdornment.Adornee or not boxAdornment.Adornee:IsDescendantOf(workspace) then
+                            boxAdornment:Destroy()
+                            break
                         end
                         task.wait()
                     end
                 end)
             end
 
-            local function monitorItems()
-                for name, color in pairs(itemTypes) do
-                    -- Check existing instances
-                    for _, instance in pairs(workspace:GetDescendants()) do
-                        if instance:IsA("Model") and instance.Name == name then
-                            createBillboard(instance, name, color)
-                        end
-                    end
+            if core and name then
+                billboardGui = Instance.new("BillboardGui")
+                billboardGui.AlwaysOnTop = true
+                billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                billboardGui.Adornee = core
+                billboardGui.MaxDistance = 2000
+                billboardGui.Parent = game.CoreGui
 
-                    -- Monitor for new instances
-                    workspace.DescendantAdded:Connect(function(instance)
-                        if instance:IsA("Model") and instance.Name == name then
-                            createBillboard(instance, name, color)
+                local label = Instance.new("TextLabel")
+                label.AnchorPoint = Vector2.new(0.5, 0.5)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = color
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.Position = UDim2.new(0.5, 0, 0.5, 0)
+                label.Text = name
+                label.Parent = billboardGui
+
+                task.spawn(function()
+                    while billboardGui do
+                        if not billboardGui.Adornee or not billboardGui.Adornee:IsDescendantOf(workspace) then
+                            billboardGui:Destroy()
+                            break
                         end
-                    end)
-                end
+                        task.wait()
+                    end
+                end)
             end
 
-            monitorItems()
-
-            table.insert(_G.nahESPInstances, esptable)
-        else
-            if _G.nahESPInstances then
-                for _, instance in pairs(_G.nahESPInstances) do
-                    for _, v in pairs(instance.nah) do
-                        v.delete()
+            return {
+                delete = function()
+                    if boxAdornment then
+                        boxAdornment:Destroy()
+                    end
+                    if billboardGui then
+                        billboardGui:Destroy()
                     end
                 end
-                _G.nahESPInstances = nil
+            }
+        end
+
+        -- Function to handle new entity
+        local function handleNewEntity(entity)
+            if table.find(entityNames, entity.Name) then
+                task.wait(0.1)
+                local espInstance = createESP(entity, Color3.fromRGB(255, 25, 25), entity.PrimaryPart, entity.Name:gsub("Moving", ""))
+                table.insert(esptable.entity, espInstance)
+            end
+        end
+
+        -- Function to setup room entities
+        local function setupRoom(room)
+            if room.Name == "50" or room.Name == "100" then
+                local figureSetup = room:FindFirstChild("FigureSetup")
+                if figureSetup then
+                    local figure = figureSetup:FindFirstChild("FigureRagdoll")
+                    task.wait(0.1)
+                    if figure then
+                        local espInstance = createESP(figure, Color3.fromRGB(255, 25, 25), figure.PrimaryPart, "Figure")
+                        table.insert(esptable.entity, espInstance)
+                    end
+                end
+            else
+                local assets = room:FindFirstChild("Assets")
+                if assets then
+                    local function checkDescendant(descendant)
+                        if descendant:IsA("Model") and table.find(entityNames, descendant.Name) then
+                            task.wait(0.1)
+                            local espInstance = createESP(descendant:FindFirstChild("Base"), Color3.fromRGB(255, 25, 25), descendant.Base, "Snare")
+                            table.insert(esptable.entity, espInstance)
+                        end
+                    end
+
+                    assets.DescendantAdded:Connect(checkDescendant)
+                    for _, descendant in pairs(assets:GetDescendants()) do
+                        checkDescendant(descendant)
+                    end
+                end
+            end
+        end
+
+        -- Main logic
+        if isEnabled then
+            local addConnect = workspace.ChildAdded:Connect(function(entity)
+                handleNewEntity(entity)
+            end)
+
+            local roomConnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+                setupRoom(room)
+            end)
+
+            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                setupRoom(room)
+            end
+
+            task.spawn(function()
+                repeat
+                    task.wait()
+                until not flags.esprush
+                addConnect:Disconnect()
+                roomConnect:Disconnect()
+
+                for _, espInstance in pairs(esptable.entity) do
+                    espInstance.delete()
+                end
+            end)
+        else
+            -- Cleanup if disabled
+            for _, espInstance in pairs(esptable.entity) do
+                espInstance.delete()
             end
         end
     end
 })
+
 
 section1:toggle({
     name = "Lever ESP",
@@ -830,147 +893,6 @@ section1:toggle({
     end
 })
 
-section2:toggle({
-    name = "Item ESP",
-    def = false,
-    callback = function(isEnabled)
-        local espItems = {}
-        local isEspEnabled = isEnabled
-        
-        -- Function to create ESP effects
-        local function createESP(part, color, name)
-            local boxAdornment
-            local billboardGui
-
-            -- Create a BoxHandleAdornment if part is a BasePart
-            if part and part:IsA("BasePart") then
-                boxAdornment = Instance.new("BoxHandleAdornment")
-                boxAdornment.Size = part.Size
-                boxAdornment.AlwaysOnTop = true
-                boxAdornment.ZIndex = 1
-                boxAdornment.AdornCullingMode = Enum.AdornCullingMode.Never
-                boxAdornment.Color3 = color
-                boxAdornment.Transparency = 1
-                boxAdornment.Adornee = part
-                boxAdornment.Parent = game.CoreGui
-
-                task.spawn(function()
-                    while boxAdornment do
-                        if not boxAdornment.Adornee or not boxAdornment.Adornee:IsDescendantOf(workspace) then
-                            boxAdornment:Destroy()
-                            break
-                        end
-                        task.wait()
-                    end
-                end)
-            end
-
-            -- Create a BillboardGui for labels
-            if part and name then
-                billboardGui = Instance.new("BillboardGui")
-                billboardGui.AlwaysOnTop = true
-                billboardGui.Size = UDim2.new(0, 200, 0, 50)
-                billboardGui.Adornee = part
-                billboardGui.MaxDistance = 2000
-                billboardGui.Parent = game.CoreGui
-
-                local label = Instance.new("TextLabel")
-                label.AnchorPoint = Vector2.new(0.5, 0.5)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = color
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.Position = UDim2.new(0.5, 0, 0.5, 0)
-                label.Text = name
-                label.Parent = billboardGui
-
-                task.spawn(function()
-                    while billboardGui do
-                        if not billboardGui.Adornee or not billboardGui.Adornee:IsDescendantOf(workspace) then
-                            billboardGui:Destroy()
-                            break
-                        end
-                        task.wait()
-                    end
-                end)
-            end
-
-            return {
-                delete = function()
-                    if boxAdornment then
-                        boxAdornment:Destroy()
-                    end
-                    if billboardGui then
-                        billboardGui:Destroy()
-                    end
-                end
-            }
-        end
-
-        -- Function to check if an item should be added to ESP
-        local function checkItem(item)
-            if item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) then
-                task.wait(0.1)
-                local part = item:FindFirstChild("Handle") or item:FindFirstChild("Prop")
-                if part then
-                    local espInstance = createESP(part, Color3.fromRGB(255, 255, 255), item.Name)
-                    table.insert(espItems, espInstance)
-                end
-            end
-        end
-
-        -- Function to handle room setup
-        local function setupRoom(room)
-            local assets = room:FindFirstChild("Assets")
-            if assets then
-                local connection
-                connection = assets.DescendantAdded:Connect(function(descendant)
-                    checkItem(descendant)
-                end)
-
-                for _, descendant in ipairs(assets:GetDescendants()) do
-                    checkItem(descendant)
-                end
-
-                task.spawn(function()
-                    while isEspEnabled do
-                        task.wait(1)
-                    end
-                    connection:Disconnect()
-                end)
-            end
-        end
-
-        if isEspEnabled then
-            -- Set up ESP for existing and new rooms
-            local roomAddedConnection
-            roomAddedConnection = workspace.CurrentRooms.ChildAdded:Connect(function(room)
-                setupRoom(room)
-            end)
-
-            for _, room in ipairs(workspace.CurrentRooms:GetChildren()) do
-                setupRoom(room)
-            end
-
-            -- Monitor the toggle state
-            task.spawn(function()
-                while isEspEnabled do
-                    task.wait(1)
-                end
-                roomAddedConnection:Disconnect()
-                
-                -- Clean up all ESP items
-                for _, espInstance in ipairs(espItems) do
-                    espInstance.delete()
-                end
-            end)
-        else
-            -- Clean up all ESP items if disabled
-            for _, espInstance in ipairs(s) do
-                espInstance.delete()
-            end
-        end
-    end
-})
 
 section2:toggle({
     name = "Entity Message (Information)",
@@ -1030,17 +952,17 @@ section2:toggle({
 })
 
 section1:toggle({
-    name = "book/paper ESP",
+    name = "Book/Paper esp",
     def = false,
-    callback = function(state)
-        if state then
-            _G.naespInstances = {}
-            local naesp = {
-                LiveHintBook = Color3.new(0, 1, 0),
-                LiveBreakerPolePickup = Color3.new(0, 0, 1)
+    callback = function(val)
+        if val then
+            _G.BookInstances = {}
+            local BookItems = {
+                LiveBreakerPolePickup = Color3.new(1, 0, 0),  -- Red color for LiveBreakerPolePickup
+                LiveHintBook = Color3.new(0, 1, 1)            -- Cyan color for LiveHintBook
             }
 
-            local function createBillboard(instance, name, color)
+            local function createBookBillboard(instance, name, color)
                 if not instance or not instance:IsDescendantOf(workspace) then return end
 
                 local bill = Instance.new("BillboardGui", game.CoreGui)
@@ -1077,35 +999,116 @@ section1:toggle({
                 end)
             end
 
-            local function naesp()
-                for name, color in pairs(naesp) do
+            local function monitorBookItems()
+                for name, color in pairs(BookItems) do
                     -- Check existing instances
                     for _, instance in pairs(workspace:GetDescendants()) do
                         if instance:IsA("Model") and instance.Name == name then
-                            createBillboard(instance, name, color)
+                            createBookBillboard(instance, name, color)
                         end
                     end
 
                     -- Monitor for new instances
                     workspace.DescendantAdded:Connect(function(instance)
                         if instance:IsA("Model") and instance.Name == name then
-                            createBillboard(instance, name, color)
+                            createBookBillboard(instance, name, color)
                         end
                     end)
                 end
             end
 
-            monitornaesp()
+            monitorBookItems()
 
-            table.insert(_G.naespInstances, esptable)
+            table.insert(_G.BookInstances, esptable)
         else
-            if _G.naespInstances then
-                for _, instance in pairs(_G.naespInstances) do
-                    for _, v in pairs(instance.naesp) do
+            if _G.BookInstances then
+                for _, instance in pairs(_G.BookInstances) do
+                    for _, v in pairs(instance.Book) do
                         v.delete()
                     end
                 end
-                _G.naespInstances = nil
+                _G.BookInstances = nil
+            end
+        end
+    end
+})
+
+section1:toggle({
+    name = "Door ESP",
+    def = false,
+    callback = function(val)
+        if val then
+            _G.DooDoorInstances = {}
+            local DooDoorItems = {
+                Door = Color3.new(1, 0.5, 0)  -- Orange color for DooDoor
+            }
+
+            local function createDooDoorBillboard(instance, name, color)
+                if not instance or not instance:IsDescendantOf(workspace) then return end
+
+                local bill = Instance.new("BillboardGui", game.CoreGui)
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = instance
+                bill.MaxDistance = 2000
+
+                local mid = Instance.new("Frame", bill)
+                mid.AnchorPoint = Vector2.new(0.5, 0.5)
+                mid.BackgroundColor3 = color
+                mid.Size = UDim2.new(0, 8, 0, 8)
+                mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Instance.new("UICorner", mid).CornerRadius = UDim.new(1, 0)
+                Instance.new("UIStroke", mid)
+
+                local txt = Instance.new("TextLabel", bill)
+                txt.AnchorPoint = Vector2.new(0.5, 0.5)
+                txt.BackgroundTransparency = 1
+                txt.TextColor3 = color
+                txt.Size = UDim2.new(1, 0, 0, 20)
+                txt.Position = UDim2.new(0.5, 0, 0.7, 0)
+                txt.Text = name
+                Instance.new("UIStroke", txt)
+
+                task.spawn(function()
+                    while bill and bill.Adornee do
+                        if not bill.Adornee:IsDescendantOf(workspace) then
+                            bill:Destroy()
+                            return
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+
+            local function monitorDooDoorItems()
+                for name, color in pairs(DooDoorItems) do
+                    -- Check existing instances
+                    for _, instance in pairs(workspace:GetDescendants()) do
+                        if instance:IsA("Model") and instance.Name == name then
+                            createDooDoorBillboard(instance, name, color)
+                        end
+                    end
+
+                    -- Monitor for new instances
+                    workspace.DescendantAdded:Connect(function(instance)
+                        if instance:IsA("Model") and instance.Name == name then
+                            createDooDoorBillboard(instance, name, color)
+                        end
+                    end)
+                end
+            end
+
+            monitorDooDoorItems()
+
+            table.insert(_G.DooDoorInstances, esptable)
+        else
+            if _G.DooDoorInstances then
+                for _, instance in pairs(_G.DooDoorInstances) do
+                    for _, v in pairs(instance.DooDoor) do
+                        v.delete()
+                    end
+                end
+                _G.DooDoorInstances = nil
             end
         end
     end
