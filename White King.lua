@@ -1304,12 +1304,18 @@ section2:toggle({
             local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
             _G.codeEventInstances = _G.codeEventInstances or {}
 
-            -- 确保 char 不为 nil
-            local char = plr.Character or plr.CharacterAdded:Wait()
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+
+            -- 确保 player 和 character 都已正确初始化
+            if not player or not character then
+                warn("Player or Character is nil")
+                return
+            end
 
             local function decipherCode()
-                local paper = char:FindFirstChild("LibraryHintPaper")
-                local hints = plr.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
+                local paper = character:FindFirstChild("LibraryHintPaper")
+                local hints = player.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
                 local code = {[1]="_", [2]="_", [3]="_", [4]="_", [5]="_"}
 
                 if paper then
@@ -1329,7 +1335,7 @@ section2:toggle({
             end
             
             local addConnect
-            addConnect = char.ChildAdded:Connect(function(v)
+            addConnect = character.ChildAdded:Connect(function(v)
                 if v:IsA("Tool") and v.Name == "LibraryHintPaper" then
                     task.wait()
                     local code = table.concat(decipherCode())
