@@ -10,7 +10,17 @@ local window = library:new({
 
 -- Create a new tab
 local tab = window:page({
-    name = "Doors"
+    name = "main"
+})
+
+local tab2 = window:page({
+    name = "Bata Function"
+})
+
+local section3 = tab2:section({
+    name = "Bata Function",
+    side = "left",
+    size = 250
 })
 
 -- Create a section in the tab
@@ -456,49 +466,6 @@ section2:toggle({
     def = false,
     callback = function(state)
         setupAutoInteract(state)
-    end
-})
-
-local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local Humanoid = Character:WaitForChild("Humanoid")
-
-local tpWalkThread
-
-local function tpWalk(speed)
-    while true do
-        task.wait()
-        if Humanoid.MoveDirection.Magnitude > 0 then
-            -- Move the player in the direction they are facing, including vertical movement
-            local moveDirection = Humanoid.MoveDirection * speed
-
-            -- Adjust for swimming: add upward movement if the player is in water
-            if Humanoid:GetState() == Enum.HumanoidStateType.Swimming then
-                moveDirection = moveDirection + Vector3.new(0, speed, 0)
-            end
-
-            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + moveDirection
-        end
-    end
-end
-
-section2:slider({
-    name = "Speed",
-    def = 0,
-    max = 3,
-    min = 0,
-    rounding = true,
-    callback = function(value)
-        if tpWalkThread then
-            tpWalkThread:Disconnect()
-        end
-
-        -- Start a new tpWalk thread
-        tpWalkThread = coroutine.wrap(function()
-            tpWalk(Value)
-        end)
-        tpWalkThread()
     end
 })
 
@@ -1105,5 +1072,109 @@ section1:toggle({
                 espInstance.delete()
             end
         end
+    end
+})
+
+section2:toggle({
+    name = "Enity Notification",
+    def = false,
+    callback = function(isEnabled)
+        local addconnect
+
+        -- Function to handle notifications
+        local function handleNotification(v)
+            -- Check if the item is within range and still in the workspace
+            repeat task.wait() until plr:DistanceFromCharacter(v:GetPivot().Position) < 1000 or not v:IsDescendantOf(workspace)
+            
+            if v:IsDescendantOf(workspace) then
+                Notification:Notify(
+                    {Title = "White KING Notification", Description = v.Name:gsub("Moving",""):lower().." Spawned Please hide!"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 5, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=13327193518", ImageColor = Color3.fromRGB(255, 255, 255)}
+                )
+            end
+        end
+
+        -- Start monitoring for new items
+        if isEnabled then
+            addconnect = workspace.ChildAdded:Connect(function(v)
+                if table.find(entitynames, v.Name) then
+                    handleNotification(v)
+                end
+            end)
+        else
+            -- Disconnect the connection when notifications are disabled
+            if addconnect then
+                addconnect:Disconnect()
+            end
+        end
+
+        -- Clean up when toggle is disabled
+        task.spawn(function()
+            while isEnabled do
+                task.wait(1)
+            end
+            if addconnect then
+                addconnect:Disconnect()
+            end
+        end)
+    end
+})
+
+section3:toggle({
+    name = "Auto Click Key",
+    def = false,
+    callback = function(isEnabled)
+        local function fireProximityPrompt(modelName, distanceThreshold)
+            -- Function to check distance and trigger prompt
+            local function checkDistance()
+                local model = workspace:FindFirstChild(modelName)
+                if not model then
+                    warn("Model not found:", modelName)
+                    return
+                end
+
+                local prompt = model:FindFirstChildWhichIsA("ProximityPrompt")
+                if not prompt then
+                    warn("ProximityPrompt not found in model:", modelName)
+                    return
+                end
+
+                local function onHeartbeat()
+                    if not isEnabled then
+                        return
+                    end
+
+                    local player = game.Players.LocalPlayer
+                    local character = player.Character
+                    if not character then return end
+
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+
+                    local distance = (hrp.Position - model.PrimaryPart.Position).Magnitude
+                    if distance < distanceThreshold then
+                        prompt:Fire() -- Simulate the action of clicking the prompt
+                    end
+                end
+
+                game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
+            end
+
+            checkDistance()
+        end
+
+        -- Start or stop auto-click based on toggle state
+        if isEnabled then
+            fireProximityPrompt("keyObtain", 2)
+        end
+
+        -- Cleanup when disabled
+        task.spawn(function()
+            while isEnabled do
+                task.wait(1)
+            end
+            -- You might need to add additional cleanup code here if necessary
+        end)
     end
 })
