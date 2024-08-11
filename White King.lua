@@ -13,16 +13,6 @@ local tab = window:page({
     name = "main"
 })
 
-local tab2 = window:page({
-    name = "Bata Function"
-})
-
-local section3 = tab2:section({
-    name = "Bata Function",
-    side = "left",
-    size = 250
-})
-
 -- Create a section in the tab
 local section1 = tab:section({
     name = "esp",
@@ -1214,68 +1204,10 @@ section2:toggle({
     end
 })
 
-section3:toggle({
-    name = "Look aura {Key}",
-    def = false,
-    callback = function(isEnabled)
-        local function fireProximityPrompt(modelName, distanceThreshold)
-            -- Function to check distance and trigger prompt
-            local function checkDistance()
-                local model = workspace:FindFirstChild(modelName)
-                if not model then
-                    warn("Model not found:", modelName)
-                    return
-                end
-
-                local prompt = model:FindFirstChildWhichIsA("ProximityPrompt")
-                if not prompt then
-                    warn("ProximityPrompt not found in model:", modelName)
-                    return
-                end
-
-                local function onHeartbeat()
-                    if not isEnabled then
-                        return
-                    end
-
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character
-                    if not character then return end
-
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-
-                    local distance = (hrp.Position - model.PrimaryPart.Position).Magnitude
-                    if distance < distanceThreshold then
-                        prompt:Fire() -- Simulate the action of clicking the prompt
-                    end
-                end
-
-                game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
-            end
-
-            checkDistance()
-        end
-
-        -- Start or stop auto-click based on toggle state
-        if isEnabled then
-            fireProximityPrompt("KeyObtain", 20)
-        end
-
-        -- Cleanup when disabled
-        task.spawn(function()
-            while isEnabled do
-                task.wait(1)
-            end
-            -- You might need to add additional cleanup code here if necessary
-        end)
-    end
-})
-
 section1:toggle({
     name = "Lever esp",
     def = false,
-    callback = function(isEnabled)
+    callback = function(state)
         if state then
             _G.ABCInstances = {}
             local ABC = {
@@ -1350,63 +1282,5 @@ section1:toggle({
                 _G.ABCInstances = nil
             end
         end
-    end
-})
-
-section2:toggle({
-    name = "Look aura {Lever}",
-    def = false,
-    callback = function(isEnabled)
-        local function fireProximityPrompt(modelName, distanceThreshold)
-            -- Function to check distance and trigger prompt
-            local function checkDistance()
-                local model = workspace:FindFirstChild(modelName)
-                if not model then
-                    warn("Model not found:", modelName)
-                    return
-                end
-
-                local prompt = model:FindFirstChildWhichIsA("ProximityPrompt")
-                if not prompt then
-                    warn("ProximityPrompt not found in model:", modelName)
-                    return
-                end
-
-                local function onHeartbeat()
-                    if not isEnabled then
-                        return
-                    end
-
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character
-                    if not character then return end
-
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-
-                    local distance = (hrp.Position - model.PrimaryPart.Position).Magnitude
-                    if distance < distanceThreshold then
-                        prompt:Fire() -- Simulate the action of clicking the prompt
-                    end
-                end
-
-                game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
-            end
-
-            checkDistance()
-        end
-
-        -- Start or stop auto-click based on toggle state
-        if isEnabled then
-            fireProximityPrompt("LeverForGate", 20)
-        end
-
-        -- Cleanup when disabled
-        task.spawn(function()
-            while isEnabled do
-                task.wait(1)
-            end
-            -- You might need to add additional cleanup code here if necessary
-        end)
     end
 })
