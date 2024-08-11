@@ -1294,6 +1294,7 @@ section2:toggle({
     end
 })
 
+
 section2:toggle({
     name = "Library Code Notification",
     def = false,
@@ -1302,6 +1303,9 @@ section2:toggle({
             local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
             local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
             _G.codeEventInstances = _G.codeEventInstances or {}
+
+            -- 确保 char 不为 nil
+            local char = plr.Character or plr.CharacterAdded:Wait()
 
             local function decipherCode()
                 local paper = char:FindFirstChild("LibraryHintPaper")
